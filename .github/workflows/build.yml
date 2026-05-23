@@ -18,7 +18,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: "9.0.x"
 
       - name: Download Dalamud
         shell: pwsh
@@ -45,11 +45,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: XIVDashPlugin
-          path: XIVDashPlugin/bin/Release/net8.0-windows/XIVDashPlugin/
+          path: XIVDashPlugin/bin/Release/net10.0-windows/XIVDashPlugin/
 
       - name: Create release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: XIVDashPlugin/bin/Release/net8.0-windows/XIVDashPlugin/*
+          files: XIVDashPlugin/bin/Release/net10.0-windows/XIVDashPlugin/*
           generate_release_notes: true
