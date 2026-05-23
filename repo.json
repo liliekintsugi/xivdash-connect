@@ -5,7 +5,7 @@
     "InternalName": "XIVDashPlugin",
     "AssemblyVersion": "1.0.0.0",
     "Punchline": "Synchro ta progression FFXIV vers XIVDash.",
-    "Description": "Synchronise automatiquement ta progression FFXIV (quêtes, niveaux de jobs) avec XIVDash.",
+    "Description": "Synchronise automatiquement ta progression FFXIV (quÃªtes, niveaux de jobs) avec XIVDash.",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 15,
     "Tags": [
@@ -21,7 +21,7 @@
     "DownloadLinkUpdate": "https://github.com/liliekintsugi/xivdash-connect/releases/latest/download/latest.zip",
     "DownloadLinkTesting": "https://github.com/liliekintsugi/xivdash-connect/releases/latest/download/latest.zip",
     "DownloadCount": 0,
-    "LastUpdate": 1779559725,
+    "LastUpdate": 1779559826,
     "IconUrl": "",
     "ImageUrls": []
   }
