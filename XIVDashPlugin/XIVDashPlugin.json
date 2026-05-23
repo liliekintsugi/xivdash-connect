@@ -7,7 +7,7 @@
   "Description": "Synchronise automatiquement ta progression FFXIV (quêtes, niveaux de jobs) avec XIVDash.",
   "ApplicableVersion": "any",
   "Tags": ["xivdash", "progression", "tracker"],
-  "DalamudApiLevel": 14,
+  "DalamudApiLevel": 15,
   "LoadRequiredState": 0,
   "LoadSync": false
 }
