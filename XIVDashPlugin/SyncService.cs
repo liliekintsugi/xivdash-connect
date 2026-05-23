@@ -36,7 +36,9 @@ public sealed class SyncService : IDisposable
             if (!response.IsSuccessStatusCode)
                 return new SyncResult(false, $"Erreur {(int)response.StatusCode}: {body}", completedIds.Count, jobs.Count);
 
-            return new SyncResult(true, $"Synchro OK — {completedIds.Count} quêtes, {jobs.Count} jobs", completedIds.Count, jobs.Count);
+            var jobWord = jobs.Count == 1 ? "job" : "jobs";
+            var questWord = completedIds.Count == 1 ? "quête" : "quêtes";
+            return new SyncResult(true, $"Synchro OK — {completedIds.Count} {questWord}, {jobs.Count} {jobWord}", completedIds.Count, jobs.Count);
         });
     }
 
