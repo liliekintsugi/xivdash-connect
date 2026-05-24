@@ -77,8 +77,10 @@ public sealed class SyncService : IDisposable
         var instanceContent = InstanceContent.Instance();
         if (instanceContent == null) return completed;
 
-        // ContentRoulette RowIds for standard daily roulettes
-        byte[] rouletteIds = [2, 3, 4, 5, 6, 7, 8, 9];
+        // ContentRoulette RowIds (verified against XIVAPI ContentRoulette sheet):
+        // 1=Leveling, 3=Main Scenario, 4=Guildhests, 5=Expert,
+        // 6=Trials, 9=Mentor, 15=Alliance Raids, 17=Normal Raids
+        byte[] rouletteIds = [1, 3, 4, 5, 6, 9, 15, 17];
         foreach (var id in rouletteIds)
         {
             if (instanceContent->IsRouletteComplete(id))
