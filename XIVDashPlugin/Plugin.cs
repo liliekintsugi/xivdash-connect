@@ -3,7 +3,6 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using XIVDashPlugin.Windows;
-using Lumina.Excel.Sheets;
 
 namespace XIVDashPlugin;
 
