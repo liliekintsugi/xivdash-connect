@@ -12,7 +12,7 @@ public sealed class ConfigWindow : Window
     private string _url = string.Empty;
     private string _token = string.Empty;
     private string _status = string.Empty;
-    private bool _syncing;
+    private volatile bool _syncing;
 
     public ConfigWindow(Configuration config, SyncService sync)
         : base("XIVDash Connect###XIVDashConfig", ImGuiWindowFlags.AlwaysAutoResize)
@@ -35,8 +35,7 @@ public sealed class ConfigWindow : Window
         ImGui.SetNextItemWidth(320);
         if (ImGui.InputText("##url", ref _url, 256))
         {
-            if (Uri.TryCreate(_url, UriKind.Absolute, out var uri) &&
-                (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp))
+            if (Uri.TryCreate(_url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps)
             {
                 _config.XIVDashUrl = _url;
                 _config.Save();
@@ -44,9 +43,8 @@ public sealed class ConfigWindow : Window
         }
 
         if (!string.IsNullOrWhiteSpace(_url) &&
-            (!Uri.TryCreate(_url, UriKind.Absolute, out var parsed) ||
-             (parsed.Scheme != Uri.UriSchemeHttps && parsed.Scheme != Uri.UriSchemeHttp)))
-            ImGui.TextColored(new Vector4(0.87f, 0.33f, 0.33f, 1f), "URL invalide (http:// ou https:// requis)");
+            (!Uri.TryCreate(_url, UriKind.Absolute, out var parsed) || parsed.Scheme != Uri.UriSchemeHttps))
+            ImGui.TextColored(new Vector4(0.87f, 0.33f, 0.33f, 1f), "URL invalide (https:// requis)");
 
         ImGui.Spacing();
         ImGui.Text("Token API (depuis Profil → Dalamud)");

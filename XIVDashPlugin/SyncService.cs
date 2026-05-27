@@ -10,34 +10,48 @@ namespace XIVDashPlugin;
 public sealed class SyncService : IDisposable
 {
     private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
+    private readonly SemaphoreSlim _syncLock = new(1, 1);
 
     private const uint QuestIdMin = 65536;
     private const uint QuestIdMax = 72000;
 
     public Task<SyncResult> SyncAsync(string token, string baseUrl)
     {
-        // Read game data synchronously on the calling (game) thread before going async
+        if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+            return Task.FromResult(new SyncResult(false, "URL invalide (HTTPS requis)", 0, 0, 0));
+
         var completedIds      = GetCompletedQuestIds();
         var jobs              = GetJobLevels();
         var completedRoulettes = GetCompletedRouletteIds();
 
         return Task.Run(async () =>
         {
-            var payload = new { completedQuestIds = completedIds, jobs, completedRouletteIds = completedRoulettes };
-            var json    = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            if (!await _syncLock.WaitAsync(0))
+                return new SyncResult(false, "Synchro déjà en cours", 0, 0, 0);
 
-            var url      = baseUrl.TrimEnd('/') + "/api/dalamud/sync";
-            var response = await _http.PostAsync(url, content);
+            try
+            {
+                var payload = new { completedQuestIds = completedIds, jobs, completedRouletteIds = completedRoulettes };
+                var json    = JsonSerializer.Serialize(payload);
+                using var content = new StringContent(json, Encoding.UTF8, "application/json");
+                using var request = new HttpRequestMessage(HttpMethod.Post, baseUrl.TrimEnd('/') + "/api/dalamud/sync");
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                request.Content = content;
 
-            if (!response.IsSuccessStatusCode)
-                return new SyncResult(false, $"Erreur {(int)response.StatusCode}", completedIds.Count, jobs.Count, completedRoulettes.Count);
+                var response = await _http.SendAsync(request);
 
-            var questWord    = completedIds.Count == 1 ? "quête" : "quêtes";
-            var jobWord      = jobs.Count == 1 ? "job" : "jobs";
-            var rouletteWord = completedRoulettes.Count == 1 ? "roulette" : "roulettes";
-            return new SyncResult(true, $"Synchro OK — {completedIds.Count} {questWord}, {jobs.Count} {jobWord}, {completedRoulettes.Count} {rouletteWord}", completedIds.Count, jobs.Count, completedRoulettes.Count);
+                if (!response.IsSuccessStatusCode)
+                    return new SyncResult(false, $"Erreur {(int)response.StatusCode}", completedIds.Count, jobs.Count, completedRoulettes.Count);
+
+                var questWord    = completedIds.Count == 1 ? "quête" : "quêtes";
+                var jobWord      = jobs.Count == 1 ? "job" : "jobs";
+                var rouletteWord = completedRoulettes.Count == 1 ? "roulette" : "roulettes";
+                return new SyncResult(true, $"Synchro OK — {completedIds.Count} {questWord}, {jobs.Count} {jobWord}, {completedRoulettes.Count} {rouletteWord}", completedIds.Count, jobs.Count, completedRoulettes.Count);
+            }
+            finally
+            {
+                _syncLock.Release();
+            }
         });
     }
 
@@ -119,7 +133,11 @@ public sealed class SyncService : IDisposable
         [28] = "RPR",  [29] = "SGE",  [30] = "VPR",  [31] = "PCT",
     };
 
-    public void Dispose() => _http.Dispose();
+    public void Dispose()
+    {
+        _http.Dispose();
+        _syncLock.Dispose();
+    }
 }
 
 public record SyncResult(bool Success, string Message, int QuestCount, int JobCount, int RouletteCount = 0);

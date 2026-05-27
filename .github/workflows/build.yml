@@ -6,9 +6,6 @@ on:
       - "v*"
   workflow_dispatch:
 
-env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-
 jobs:
   build:
     runs-on: windows-latest
@@ -54,8 +51,12 @@ jobs:
         shell: pwsh
         run: |
           python3 -c "
-          import json, time
-          with open('XIVDashPlugin/bin/Release/net10.0-windows/XIVDashPlugin/XIVDashPlugin.json') as f:
+          import json, time, sys, os
+          manifest_path = 'XIVDashPlugin/bin/Release/net10.0-windows/XIVDashPlugin/XIVDashPlugin.json'
+          if not os.path.exists(manifest_path):
+              print(f'ERROR: manifest not found at {manifest_path}', file=sys.stderr)
+              sys.exit(1)
+          with open(manifest_path) as f:
               manifest = json.load(f)
           with open('repo.json') as f:
               repo = json.load(f)
@@ -65,13 +66,15 @@ jobs:
           repo[0]['LastUpdate'] = int(time.time())
           with open('repo.json', 'w', encoding='utf-8') as f:
               json.dump(repo, f, indent=2, ensure_ascii=False)
+          print(f'Updated repo.json: AssemblyVersion={manifest[\"AssemblyVersion\"]}')
           "
+          if ($LASTEXITCODE -ne 0) { exit 1 }
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add repo.json
-          git commit -m "chore: update repo.json for ${{ github.ref_name }}"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          git commit -m "chore: update repo.json for ${{ github.ref_name }}" || exit 1
+          git pull --rebase origin main || exit 1
+          git push origin HEAD:main || exit 1
 
       - name: Create release
         if: startsWith(github.ref, 'refs/tags/')
