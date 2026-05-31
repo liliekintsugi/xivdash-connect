@@ -14,22 +14,20 @@ public sealed class SyncService : IDisposable
 
     private const uint  QuestIdMin = 65536;
     private const uint  QuestIdMax = 72000;
-    private const ushort CfcIdMax  = 1200;   // ContentFinderCondition upper bound
 
     public Task<SyncResult> SyncAsync(string token, string baseUrl)
     {
         if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
-            return Task.FromResult(new SyncResult(false, "URL invalide (HTTPS requis)", 0, 0, 0, 0));
+            return Task.FromResult(new SyncResult(false, "URL invalide (HTTPS requis)", 0, 0, 0));
 
         var completedIds       = GetCompletedQuestIds();
         var jobs               = GetJobLevels();
         var completedRoulettes = GetCompletedRouletteIds();
-        var completedContent   = GetCompletedContentIds();
 
         return Task.Run(async () =>
         {
             if (!await _syncLock.WaitAsync(0))
-                return new SyncResult(false, "Synchro déjà en cours", 0, 0, 0, 0);
+                return new SyncResult(false, "Synchro déjà en cours", 0, 0, 0);
 
             try
             {
@@ -38,7 +36,8 @@ public sealed class SyncService : IDisposable
                     completedQuestIds    = completedIds,
                     jobs,
                     completedRouletteIds = completedRoulettes,
-                    completedContentIds  = completedContent,
+                    // completedContentIds intentionally omitted — derived server-side
+                    // from quest completion (unlock quest complete ⟹ content done).
                 };
                 var json    = JsonSerializer.Serialize(payload);
                 using var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -50,14 +49,13 @@ public sealed class SyncService : IDisposable
 
                 if (!response.IsSuccessStatusCode)
                     return new SyncResult(false, $"Erreur {(int)response.StatusCode}",
-                        completedIds.Count, jobs.Count, completedRoulettes.Count, completedContent.Count);
+                        completedIds.Count, jobs.Count, completedRoulettes.Count);
 
-                var qWord = completedIds.Count     == 1 ? "quête"   : "quêtes";
-                var jWord = jobs.Count             == 1 ? "job"     : "jobs";
-                var cWord = completedContent.Count == 1 ? "contenu" : "contenus";
+                var qWord = completedIds.Count == 1 ? "quête" : "quêtes";
+                var jWord = jobs.Count         == 1 ? "job"   : "jobs";
                 return new SyncResult(true,
-                    $"Synchro OK — {completedIds.Count} {qWord}, {jobs.Count} {jWord}, {completedContent.Count} {cWord}",
-                    completedIds.Count, jobs.Count, completedRoulettes.Count, completedContent.Count);
+                    $"Synchro OK — {completedIds.Count} {qWord}, {jobs.Count} {jWord}",
+                    completedIds.Count, jobs.Count, completedRoulettes.Count);
             }
             finally
             {
@@ -123,30 +121,6 @@ public sealed class SyncService : IDisposable
         return completed;
     }
 
-    /// <summary>
-    /// Retourne les IDs ContentFinderCondition (row IDs XIVAPI) des instances
-    /// complétées au moins une fois.
-    ///
-    /// UIState.IsUnlockLinkUnlocked(id) renvoie true quand l'entrée correspondante
-    /// du Duty Finder a été franchie au moins une fois (ce qui déverrouille son
-    /// "unlock link" dans la table de flags du jeu).
-    ///
-    /// Les IDs 1–1200 couvrent tout le contenu jusqu'à Dawntrail inclus.
-    /// </summary>
-    private static unsafe List<ushort> GetCompletedContentIds()
-    {
-        var completed = new List<ushort>();
-        var uiState   = UIState.Instance();
-        if (uiState == null) return completed;
-
-        for (ushort cfcId = 1; cfcId <= CfcIdMax; cfcId++)
-        {
-            if (uiState->IsUnlockLinkUnlocked(cfcId))
-                completed.Add(cfcId);
-        }
-        return completed;
-    }
-
     private static Dictionary<int, string> GetClassJobMap() => new()
     {
         [0]  = "MNK",  [1]  = "PLD",  [2]  = "WAR",  [3]  = "BRD",
@@ -171,5 +145,4 @@ public record SyncResult(
     string Message,
     int    QuestCount,
     int    JobCount,
-    int    RouletteCount = 0,
-    int    ContentCount  = 0);
+    int    RouletteCount = 0);
