@@ -3,9 +3,9 @@
     "Author": "liliekintsugi",
     "Name": "XIVDash Connect",
     "InternalName": "XIVDashPlugin",
-    "AssemblyVersion": "1.2.9.0",
+    "AssemblyVersion": "2.0.0.0",
     "Punchline": "Synchro ta progression FFXIV vers XIVDash.",
-    "Description": "Synchronise automatiquement ta progression FFXIV (quetes, niveaux de jobs) avec XIVDash.",
+    "Description": "Synchronise automatiquement ta progression FFXIV vers XIVDash : niveaux de jobs, quetes MSQ, donjons/defis/raids accomplis. Synchro auto au changement de zone.",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 15,
     "Tags": [
