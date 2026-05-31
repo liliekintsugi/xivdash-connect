@@ -18,13 +18,12 @@ public sealed class Plugin : IDalamudPlugin
     private readonly WindowSystem _windowSystem;
     private readonly ConfigWindow _configWindow;
 
-    private bool _lastLoggedIn;
-
     public Plugin(
         IDalamudPluginInterface pluginInterface,
         ICommandManager commands,
         IClientState clientState,
-        IPluginLog log)
+        IPluginLog log,
+        IDataManager dataManager)
     {
         PluginInterface = pluginInterface;
         _commands = commands;
@@ -32,7 +31,7 @@ public sealed class Plugin : IDalamudPlugin
         _log = log;
 
         _config = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-        _sync = new SyncService();
+        _sync = new SyncService(dataManager);
         _windowSystem = new WindowSystem("XIVDashPlugin");
         _configWindow = new ConfigWindow(_config, _sync);
         _windowSystem.AddWindow(_configWindow);
@@ -46,13 +45,11 @@ public sealed class Plugin : IDalamudPlugin
         pluginInterface.UiBuilder.OpenConfigUi += OpenConfig;
         pluginInterface.UiBuilder.OpenMainUi += OpenConfig;
 
-        // Auto-sync on zone change
         _clientState.TerritoryChanged += OnTerritoryChanged;
         _clientState.Login += OnLogin;
     }
 
     private void OnCommand(string command, string args) => OpenConfig();
-
     private void OpenConfig() => _configWindow.IsOpen = true;
 
     private void OnLogin()
